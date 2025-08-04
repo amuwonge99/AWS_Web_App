@@ -1,0 +1,12 @@
+{
+  "name": "our-practical-node",
+  "version": "1.0.0",
+  "description": "Simple Node.js web server for our Practical Week solution.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
