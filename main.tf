@@ -29,6 +29,14 @@ resource "aws_ecs_cluster" "my_cluster" {
 
 }
 
+resource "aws_s3_bucket" "team_one_s3" {
+  bucket = "test59y7h6zf"
+ 
+  tags = {
+    Name       = "Our_bucket"
+  }
+  
+}
 
 
 
