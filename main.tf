@@ -1,4 +1,4 @@
-# Define required providers.
+# Define required providers
 terraform {
   required_providers {
     aws = {
@@ -8,10 +8,9 @@ terraform {
   }
 }
 
-# Configure the AWS provider
 provider "aws" {
-  region     = "eu-west-2"  # Specify your desired AWS region
-  profile = "default"
+  region     = "eu-west-2" 
+  profile = "default" #uses aws credentials from home directory, explain benefit.
 }
 
 # Create an ECR repository
@@ -22,17 +21,12 @@ resource "aws_ecr_repository" "app_ecr_repo" {
     name = "CreatedByTeam1"
 
     }
-      lifecycle {
-    create_before_destroy = true
-  }
 }
 
 
 resource "aws_ecs_cluster" "my_cluster" {
   name = "app-cluster"
-    lifecycle {
-    create_before_destroy = true
-  }
+
 }
 
 
@@ -65,18 +59,13 @@ resource "aws_ecs_task_definition" "app_task" {
   cpu                      = 256         # Specify the CPU the container requires
   execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
 
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "ecsTaskExecutionRole"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
 
-    lifecycle {
-    create_before_destroy = true
-  }
+
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -94,9 +83,7 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   role       = "${aws_iam_role.ecsTaskExecutionRole.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 
-    lifecycle {
-    create_before_destroy = true
-  }
+
 }
 
 
@@ -143,10 +130,6 @@ resource "aws_alb" "application_load_balancer" {
   ]
   # security group
   security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
-
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 
@@ -187,9 +170,6 @@ resource "aws_lb_target_group" "target_group" {
   target_type = "ip"
   vpc_id      = "${aws_default_vpc.default_vpc.id}" # default VPC
 
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "aws_lb_listener" "listener" {
@@ -200,9 +180,7 @@ resource "aws_lb_listener" "listener" {
     type             = "forward"
     target_group_arn = "${aws_lb_target_group.target_group.arn}" # target group
   }
-    lifecycle {
-    create_before_destroy = true
-  }
+
 }
 
 
@@ -226,10 +204,6 @@ resource "aws_ecs_service" "app_service" {
     subnets          = ["${aws_default_subnet.default_subnet_a.id}", "${aws_default_subnet.default_subnet_b.id}"]
     assign_public_ip = true     # Provide the containers with public IPs
     security_groups  = ["${aws_security_group.service_security_group.id}"] # Set up the security group
-  }
-
-      lifecycle {
-    create_before_destroy = true
   }
    
   }
@@ -270,7 +244,7 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   comparison_operator       = "GreaterThanOrEqualToThreshold"
   evaluation_periods        = 2
   metric_name               = "CPUUtilization"
-  namespace                 = "AWS/ECR"
+  namespace                 = "AWS/ECS"
   period                    = 120
   statistic                 = "Average"
   threshold                 = 80
@@ -298,5 +272,13 @@ resource "aws_cloudwatch_log_stream" "log_stream" {
 
     lifecycle {
     create_before_destroy = true
+  }
+}
+
+resource "aws_s3_bucket" "gus-buck" {
+  bucket = "gus-isthebest-bucket"
+ 
+  tags = {
+    Name       = "CreatedByTeam1"
   }
 }
