@@ -22,11 +22,17 @@ resource "aws_ecr_repository" "app_ecr_repo" {
     name = "CreatedByTeam1"
 
     }
+      lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
 resource "aws_ecs_cluster" "my_cluster" {
   name = "app-cluster"
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -58,11 +64,19 @@ resource "aws_ecs_task_definition" "app_task" {
   memory                   = 512         # Specify the memory the container requires
   cpu                      = 256         # Specify the CPU the container requires
   execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "ecsTaskExecutionRole"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -79,6 +93,10 @@ data "aws_iam_policy_document" "assume_role_policy" {
 resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   role       = "${aws_iam_role.ecsTaskExecutionRole.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -88,15 +106,27 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 #VPC
 # Provide a reference to your default VPC
 resource "aws_default_vpc" "default_vpc" {
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Provide references to your default subnets
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = "eu-west-2a"
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_default_subnet" "default_subnet_b" {
   availability_zone = "eu-west-2b"
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -113,6 +143,10 @@ resource "aws_alb" "application_load_balancer" {
   ]
   # security group
   security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -135,6 +169,10 @@ resource "aws_security_group" "load_balancer_security_group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
@@ -148,6 +186,10 @@ resource "aws_lb_target_group" "target_group" {
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = "${aws_default_vpc.default_vpc.id}" # default VPC
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_listener" "listener" {
@@ -157,6 +199,9 @@ resource "aws_lb_listener" "listener" {
   default_action {
     type             = "forward"
     target_group_arn = "${aws_lb_target_group.target_group.arn}" # target group
+  }
+    lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -173,7 +218,7 @@ resource "aws_ecs_service" "app_service" {
 
   load_balancer {
     target_group_arn = "${aws_lb_target_group.target_group.arn}" # Reference the target group
-    container_name   = "${aws_ecs_task_definition.app_task.family}"
+    container_name   = "app-first-task"
     container_port   = 5000 # Specify the container port
   }
 
@@ -182,9 +227,12 @@ resource "aws_ecs_service" "app_service" {
     assign_public_ip = true     # Provide the containers with public IPs
     security_groups  = ["${aws_security_group.service_security_group.id}"] # Set up the security group
   }
-}
 
-
+      lifecycle {
+    create_before_destroy = true
+  }
+   
+  }
 
 
 
@@ -203,6 +251,9 @@ resource "aws_security_group" "service_security_group" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+    lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -225,14 +276,27 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   threshold                 = 80
   alarm_description         = "This metric monitors ECR cpu utilization"
   insufficient_data_actions = []
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
+
 
 resource "aws_cloudwatch_log_group" "log_group" {
   name              = var.log_group_name
   retention_in_days = var.retention_days
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_cloudwatch_log_stream" "log_stream" {
   name           = "group1-log-stream"
   log_group_name = aws_cloudwatch_log_group.log_group.name
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
