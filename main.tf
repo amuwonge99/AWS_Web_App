@@ -1,4 +1,3 @@
-# Define required providers
 terraform {
   required_providers {
     aws = {
@@ -6,6 +5,18 @@ terraform {
       version = "4.45.0"
     }
   }
+
+
+   #Storing tfstate remotely. Explain benefit & hurdles if done incorrectly
+   #S3 bucket must be created locally before implementing
+   backend "s3" {
+    bucket = "gus-is-the-best"
+    key    = "terraform.tfstate"
+    region = "eu-west-2"
+    profile= "default"
+  }
+
+ 
 }
 
 provider "aws" {
@@ -13,12 +24,12 @@ provider "aws" {
   profile = "default" #uses aws credentials from home directory, explain benefit.
 }
 
-# Create an ECR repository
+#ECR repository. Explain relation to Docker
 resource "aws_ecr_repository" "app_ecr_repo" {
   name = "app-repo"
 
     tags = {
-    name = "CreatedByTeam1"
+    name = "ECR_CreatedBy_Team1"
 
     }
 }
@@ -26,22 +37,15 @@ resource "aws_ecr_repository" "app_ecr_repo" {
 
 resource "aws_ecs_cluster" "my_cluster" {
   name = "app-cluster"
-
-}
-
-resource "aws_s3_bucket" "team_one_s3" {
-  bucket = "test59y7h6zf"
- 
-  tags = {
-    Name       = "Our_bucket"
-  }
   
+    tags = {
+    name = "ECS_CreatedBy_Team1"
+    }
+
 }
 
 
-
-
-#Creating Task Definition
+#Task Definition, explain use
 resource "aws_ecs_task_definition" "app_task" {
   family                   = "app-first-task"
   container_definitions    = <<DEFINITION
@@ -67,11 +71,21 @@ resource "aws_ecs_task_definition" "app_task" {
   cpu                      = 256         # Specify the CPU the container requires
   execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
 
+     tags = {
+    name = "ECS_TaskDefinition_CreatedBy_Team1"
+
+    }
+
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "ecsTaskExecutionRole"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+
+     tags = {
+    name = "IAM_Role_CreatedBy_Team1"
+
+    }
 
 
 }
@@ -90,12 +104,7 @@ data "aws_iam_policy_document" "assume_role_policy" {
 resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   role       = "${aws_iam_role.ecsTaskExecutionRole.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-
-
 }
-
-
-
 
 
 #VPC
@@ -105,6 +114,11 @@ resource "aws_default_vpc" "default_vpc" {
     lifecycle {
     create_before_destroy = true
   }
+  tags = {
+    name = "VPC_CreatedBy_Team1"
+
+    }
+  
 }
 
 # Provide references to your default subnets
@@ -123,9 +137,6 @@ resource "aws_default_subnet" "default_subnet_b" {
     create_before_destroy = true
   }
 }
-
-
-
 
 
 #Creating Load Balancer
@@ -283,10 +294,13 @@ resource "aws_cloudwatch_log_stream" "log_stream" {
   }
 }
 
-resource "aws_s3_bucket" "gus-buck" {
-  bucket = "gus-isthebest-bucket"
+# Create an S3 bucket
+resource "aws_s3_bucket" "team_one_s3" {
+  bucket = "gus-is-the-best"
  
   tags = {
-    Name       = "CreatedByTeam1"
+    Name       = "Our_bucket"
   }
 }
+
+
