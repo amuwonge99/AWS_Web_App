@@ -1,4 +1,6 @@
 #Built a Docker container
+#Deployed to AWS using IAC
+#Monitoring (line)
 #Implemented lifecycle block on resources to satisfy zero downtime criteria
 
 
@@ -222,6 +224,29 @@ resource "aws_lb_listener" "listener" {
 
 }
 
+resource "aws_lb_listener" "https" {
+load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
+port = 443
+protocol = "HTTPS"
+
+//ssl_policy = "ELBSecurityPolicy-2016-08"
+certificate_arn = aws_acm_certificate.my-certificate.arn
+
+default_action {
+type = "forward"
+target_group_arn = aws_lb_target_group.target_group.arn
+}
+}
+
+
+resource "aws_acm_certificate" "my-certificate" {
+private_key = file("key.pem")
+certificate_body = file("cert.pem")
+tags = {
+Name = "group-1 TLS certificate"
+}
+}
+
 
 
 
@@ -298,6 +323,10 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   alarm_description         = "This metric monitors ECR cpu utilization"
   insufficient_data_actions = []
 
+    lifecycle {
+    create_before_destroy = true
+  }
+
   
 }
 
@@ -306,9 +335,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   name              = var.log_group_name
   retention_in_days = var.retention_days
 
-   lifecycle {
-    create_before_destroy = true
-  }
+ 
 
 
 }
