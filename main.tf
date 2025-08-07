@@ -191,13 +191,25 @@ resource "aws_security_group" "load_balancer_security_group" {
 
 #Configure the load balancer with the VPC networking
 resource "aws_lb_target_group" "target_group" {
-  name        = "target-group"
-  port        = 80
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = "${aws_default_vpc.default_vpc.id}" # default VPC
+name = "target-group"
+port = 80
+protocol = "HTTP"
+target_type = "ip"
+vpc_id = "${aws_default_vpc.default_vpc.id}" # default VPC
 
+lifecycle {
+create_before_destroy = true
 }
+health_check {
+port = 80
+healthy_threshold = 6
+unhealthy_threshold = 2
+timeout = 2
+interval = 5
+matcher = "200"
+}
+}
+
 
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = "${aws_alb.application_load_balancer.arn}" #  load balancer
