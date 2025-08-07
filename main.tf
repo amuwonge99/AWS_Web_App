@@ -1,4 +1,5 @@
 #Built a Docker container
+#Implemented lifecycle block on resources to satisfy zero downtime criteria
 
 
 
@@ -233,6 +234,14 @@ resource "aws_ecs_service" "app_service" {
   }
    
   }
+
+resource "aws_appautoscaling_target" "ecs_target" {
+max_capacity = 4
+min_capacity = 1
+resource_id = "service/${aws_ecs_cluster.my_cluster.name}/${aws_ecs_service.app_service.name}"
+scalable_dimension = "ecs:service:DesiredCount"
+service_namespace = "ecs"
+}
 
 
 
