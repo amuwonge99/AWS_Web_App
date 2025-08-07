@@ -48,7 +48,8 @@ resource "aws_ecs_cluster" "my_cluster" {
 #Task Definition, explain use
 resource "aws_ecs_task_definition" "app_task" {
   family                   = "app-first-task"
-  container_definitions    = <<DEFINITION
+
+  container_definitions = <<DEFINITION
   [
     {
       "name": "app-first-task",
@@ -61,23 +62,29 @@ resource "aws_ecs_task_definition" "app_task" {
         }
       ],
       "memory": 512,
-      "cpu": 256
+      "cpu": 256,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/app-first-task",
+          "awslogs-region": "eu-west-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
     }
   ]
   DEFINITION
-  requires_compatibilities = ["FARGATE"] # use Fargate as the launch type
-  network_mode             = "awsvpc"    # add the AWS VPN network mode as this is required for Fargate
-  memory                   = 512         # Specify the memory the container requires
-  cpu                      = 256         # Specify the CPU the container requires
-  execution_role_arn       = "${aws_iam_role.ecsTaskExecutionRole.arn}"
 
-     tags = {
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  memory                   = 512
+  cpu                      = 256
+  execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
+
+  tags = {
     name = "ECS_TaskDefinition_CreatedBy_Team1"
-
-    }
-
+  }
 }
-
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "ecsTaskExecutionRole"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
@@ -86,7 +93,6 @@ resource "aws_iam_role" "ecsTaskExecutionRole" {
     name = "IAM_Role_CreatedBy_Team1"
 
     }
-
 
 }
 
@@ -172,9 +178,6 @@ resource "aws_security_group" "load_balancer_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 
@@ -270,9 +273,7 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   alarm_description         = "This metric monitors ECR cpu utilization"
   insufficient_data_actions = []
 
-    lifecycle {
-    create_before_destroy = true
-  }
+  
 }
 
 
@@ -280,9 +281,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   name              = var.log_group_name
   retention_in_days = var.retention_days
 
-    lifecycle {
-    create_before_destroy = true
-  }
+
 }
 
 resource "aws_cloudwatch_log_stream" "log_stream" {
