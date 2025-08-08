@@ -1,6 +1,6 @@
 #Task
 
-#Built a Docker container
+#Built a Docker container (Covered by Liam)
 #Deployed to AWS using IAC
 #Monitoring (line 333), logging (line 353)
 #zero downtime updates
