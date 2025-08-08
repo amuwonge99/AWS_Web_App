@@ -1,25 +1,21 @@
 #Task
 
-#Built a Docker container (Covered by Liam)
-#Deployed to AWS using IAC
-#Monitoring (line 333), logging (line 353)
+#Built a Docker container (Covered by Liam).
+#Deployed to AWS using IAC. Line 49
+#Monitoring (line 315), logging (line 338)
 #zero downtime updates
-#version controlled
+#version controlled. git, github, gitignore file
 
 #Stretch goals
-#Add TLS using ACM and HTTPS on the ALB (line 262)
-#Add a health check endpoint and configure ALB to use it (line 227)
-#Introduce auto-scaling on CPU usage
+#Add TLS using ACM and HTTPS on the ALB (line 221)
+#Add a health check endpoint and configure ALB to use it (line 200)
+#Introduce auto-scaling on CPU usage (line 274)
 
 #Stretch, STRETCH goal
 #S3 bucket
 
-#Other notable things
-#variables.tf file
+#Other things
 #tags
-
-
-
 
 
 terraform {
@@ -37,10 +33,10 @@ terraform {
 
      tags = {
     name = "ECR_CreatedBy_Team1"
+    environment = "Gurmel_Stranded_At_Airport"
 
     }
   }
-
  
 }
 
@@ -50,17 +46,14 @@ provider "aws" {
   
 }
 
-
-#ECR repository. Explain relation to Docker
 resource "aws_ecr_repository" "app_ecr_repo" {
   name = "app-repo"
 
     tags = {
     name = "ECR_CreatedBy_Team1"
-
+    environment = "Gurmel_bellydancing_in_duty-free"
     }
 }
-
 
 resource "aws_ecs_cluster" "my_cluster" {
   name = "app-cluster"
@@ -145,6 +138,7 @@ resource "aws_default_vpc" "default_vpc" {
   }
   tags = {
     name = "VPC_CreatedBy_Team1"
+    environment = "gurmel_playing_beach_vollyball"
 
     }
   
@@ -192,7 +186,6 @@ resource "aws_security_group" "load_balancer_security_group" {
 
 }
 
-
 resource "aws_lb_target_group" "target_group" {
 name = "target-group"
 port = 80
@@ -213,7 +206,6 @@ interval = 5
 matcher = "200"
 }
 }
-
 
 resource "aws_lb_listener" "listener" {
   load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
@@ -238,20 +230,22 @@ target_group_arn = aws_lb_target_group.target_group.arn
 }
 }
 
+#openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
+#-subj "/CN=local.example.com"
 
-resource "aws_acm_certificate" "my-certificate" {
+resource "aws_acm_certificate" "my-certificate" { 
 private_key = file("key.pem")
 certificate_body = file("cert.pem")
 tags = {
 Name = "group-1 TLS certificate"
+
 }
 
 lifecycle {
     create_before_destroy = true
   }
+  
 }
-
-
 
 resource "aws_ecs_service" "app_service" {
   name            = "app-first-service" 
@@ -274,6 +268,7 @@ resource "aws_ecs_service" "app_service" {
    lifecycle {
     create_before_destroy = true
   }
+  
   }
 
 resource "aws_appautoscaling_target" "ecs_target" {
@@ -282,9 +277,8 @@ min_capacity = 1 #minimum amount of tasks that will run
 resource_id = "service/${aws_ecs_cluster.my_cluster.name}/${aws_ecs_service.app_service.name}"
 scalable_dimension = "ecs:service:DesiredCount"
 service_namespace = "ecs"
+
 }
-
-
 
 resource "aws_security_group" "ecs_service_security_group" {
   ingress {
@@ -308,12 +302,10 @@ resource "aws_security_group" "ecs_service_security_group" {
   }
     tags = {
     name = "ECS_Security_Group_CreatedBy_Team1"
+    environment ="gurmel_horseback_riding"
 
     }
 }
-
-
-
 
 #Load balancer app URL
 output "app_url" {
@@ -337,11 +329,11 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   }
   tags = {
     name = "Alarm_CreatedBy_Team1"
+    environment ="gurmel_canoeing_without_lifejacket"
 
     }
   
 }
-
 
 resource "aws_cloudwatch_log_group" "log_group" {
   name              = var.log_group_name
@@ -352,6 +344,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   }
     tags = {
     name = "Log_Group_CreatedBy_Team1"
+    environment ="gurmel_annoying_locals"
 
     }
 }
@@ -371,6 +364,7 @@ resource "aws_s3_bucket" "team_one_s3" {
  
   tags = {
     Name       = "Bucket_CreatedBy_Team1"
+    environment = "gurmel_at_karoke"
   }
 }
 
