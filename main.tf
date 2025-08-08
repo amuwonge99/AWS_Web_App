@@ -1,7 +1,24 @@
+#Task
+
 #Built a Docker container
 #Deployed to AWS using IAC
-#Monitoring (line)
-#Implemented lifecycle block on resources to satisfy zero downtime criteria
+#Monitoring (line 333), logging (line 353)
+#zero downtime updates
+#version controlled
+
+#Stretch goals
+#Add TLS using ACM and HTTPS on the ALB (line 262)
+#Add a health check endpoint and configure ALB to use it (line 227)
+#Introduce auto-scaling on CPU usage
+
+#Stretch, STRETCH goal
+#S3 bucket
+
+#Other notable things
+#variables.tf file
+#tags
+
+
 
 
 
@@ -12,15 +29,16 @@ terraform {
       version = "4.45.0"
     }
   }
-
-
-   #Storing tfstate remotely. Explain benefit & hurdles if done incorrectly
-   #S3 bucket must be created locally before implementing
    backend "s3" {
     bucket = "gus-is-the-best"
     key    = "terraform.tfstate"
     region = "eu-west-2"
     profile= "default"
+
+     tags = {
+    name = "ECR_CreatedBy_Team1"
+
+    }
   }
 
  
@@ -29,7 +47,9 @@ terraform {
 provider "aws" {
   region     = "eu-west-2" 
   profile = "default" #uses aws credentials from home directory, explain benefit.
+  
 }
+
 
 #ECR repository. Explain relation to Docker
 resource "aws_ecr_repository" "app_ecr_repo" {
@@ -51,8 +71,6 @@ resource "aws_ecs_cluster" "my_cluster" {
 
 }
 
-
-#Task Definition, explain use
 resource "aws_ecs_task_definition" "app_task" {
   family                   = "app-first-task"
 
@@ -120,8 +138,6 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 
-#VPC
-# Provide a reference to your default VPC
 resource "aws_default_vpc" "default_vpc" {
 
     lifecycle {
@@ -137,45 +153,30 @@ resource "aws_default_vpc" "default_vpc" {
 # Provide references to your default subnets
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = "eu-west-2a"
-
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "aws_default_subnet" "default_subnet_b" {
   availability_zone = "eu-west-2b"
-
-    lifecycle {
-    create_before_destroy = true
-  }
 }
 
 
-#Creating Load Balancer
 resource "aws_alb" "application_load_balancer" {
-  name               = "load-balancer-dev" #load balancer name
+  name               = "load-balancer-dev"
   load_balancer_type = "application"
-  subnets = [ # Referencing the default subnets
+  subnets = [ 
     "${aws_default_subnet.default_subnet_a.id}",
     "${aws_default_subnet.default_subnet_b.id}"
   ]
-  # security group
   security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
 }
 
 
-
-
-
-#Adding Security Group 
-# Create a security group for the load balancer:
 resource "aws_security_group" "load_balancer_security_group" {
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Allow traffic in from all sources
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -185,23 +186,24 @@ resource "aws_security_group" "load_balancer_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
 }
 
 
-
-
-
-#Configure the load balancer with the VPC networking
 resource "aws_lb_target_group" "target_group" {
 name = "target-group"
 port = 80
 protocol = "HTTP"
 target_type = "ip"
-vpc_id = "${aws_default_vpc.default_vpc.id}" # default VPC
+vpc_id = "${aws_default_vpc.default_vpc.id}"
 
 lifecycle {
 create_before_destroy = true
 }
+
 health_check {
 port = 80
 healthy_threshold = 6
@@ -214,12 +216,12 @@ matcher = "200"
 
 
 resource "aws_lb_listener" "listener" {
-  load_balancer_arn = "${aws_alb.application_load_balancer.arn}" #  load balancer
+  load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
   port              = "80"
   protocol          = "HTTP"
   default_action {
     type             = "forward"
-    target_group_arn = "${aws_lb_target_group.target_group.arn}" # target group
+    target_group_arn = "${aws_lb_target_group.target_group.arn}"
   }
 
 }
@@ -228,8 +230,6 @@ resource "aws_lb_listener" "https" {
 load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
 port = 443
 protocol = "HTTPS"
-
-//ssl_policy = "ELBSecurityPolicy-2016-08"
 certificate_arn = aws_acm_certificate.my-certificate.arn
 
 default_action {
@@ -245,36 +245,40 @@ certificate_body = file("cert.pem")
 tags = {
 Name = "group-1 TLS certificate"
 }
+
+lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
 
-
-#Create an ECS Service
 resource "aws_ecs_service" "app_service" {
   name            = "app-first-service" 
-  cluster         = "${aws_ecs_cluster.my_cluster.id}"   # Reference the created Cluster
+  cluster         = "${aws_ecs_cluster.my_cluster.id}" 
   task_definition = "${aws_ecs_task_definition.app_task.arn}" # Reference the task that the service will spin up
   launch_type     = "FARGATE"
-  desired_count   = 3 # Set up the number of containers to 3
+  desired_count   = 3 # At least 3 instances always running
 
   load_balancer {
-    target_group_arn = "${aws_lb_target_group.target_group.arn}" # Reference the target group
+    target_group_arn = "${aws_lb_target_group.target_group.arn}"
     container_name   = "app-first-task"
-    container_port   = 5000 # Specify the container port
+    container_port   = 5000
   }
 
   network_configuration {
     subnets          = ["${aws_default_subnet.default_subnet_a.id}", "${aws_default_subnet.default_subnet_b.id}"]
-    assign_public_ip = true     # Provide the containers with public IPs
-    security_groups  = ["${aws_security_group.service_security_group.id}"] # Set up the security group
+    assign_public_ip = true    
+    security_groups  = ["${aws_security_group.service_security_group.id}"]
   }
-   
+   lifecycle {
+    create_before_destroy = true
+  }
   }
 
 resource "aws_appautoscaling_target" "ecs_target" {
-max_capacity = 4
-min_capacity = 1
+max_capacity = 4 #maximum amount of tasks that will run
+min_capacity = 1 #minimum amount of tasks that will run
 resource_id = "service/${aws_ecs_cluster.my_cluster.name}/${aws_ecs_service.app_service.name}"
 scalable_dimension = "ecs:service:DesiredCount"
 service_namespace = "ecs"
@@ -282,14 +286,15 @@ service_namespace = "ecs"
 
 
 
-#Only allow the traffic from the created load balancer
-resource "aws_security_group" "service_security_group" {
+resource "aws_security_group" "ecs_service_security_group" {
   ingress {
     from_port = 0
     to_port   = 0
     protocol  = "-1"
     # Only allowing traffic in from the load balancer security group
     security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
+
+    
   }
 
   egress {
@@ -301,12 +306,16 @@ resource "aws_security_group" "service_security_group" {
     lifecycle {
     create_before_destroy = true
   }
+    tags = {
+    name = "ECS_Security_Group_CreatedBy_Team1"
+
+    }
 }
 
 
 
 
-#Log the load balancer app URL
+#Load balancer app URL
 output "app_url" {
   value = aws_alb.application_load_balancer.dns_name
 }
@@ -320,13 +329,16 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
   period                    = 120
   statistic                 = "Average"
   threshold                 = 80
-  alarm_description         = "This metric monitors ECR cpu utilization"
+  alarm_description         = "This metric monitors ECS CPU utilization"
   insufficient_data_actions = []
 
     lifecycle {
     create_before_destroy = true
   }
+  tags = {
+    name = "Alarm_CreatedBy_Team1"
 
+    }
   
 }
 
@@ -335,9 +347,13 @@ resource "aws_cloudwatch_log_group" "log_group" {
   name              = var.log_group_name
   retention_in_days = var.retention_days
 
- 
+  lifecycle {
+    create_before_destroy = true
+  }
+    tags = {
+    name = "Log_Group_CreatedBy_Team1"
 
-
+    }
 }
 
 resource "aws_cloudwatch_log_stream" "log_stream" {
@@ -347,14 +363,14 @@ resource "aws_cloudwatch_log_stream" "log_stream" {
     lifecycle {
     create_before_destroy = true
   }
+  
 }
 
-# Create an S3 bucket
 resource "aws_s3_bucket" "team_one_s3" {
   bucket = "gus-is-the-best"
  
   tags = {
-    Name       = "Our_bucket"
+    Name       = "Bucket_CreatedBy_Team1"
   }
 }
 
