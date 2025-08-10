@@ -36,7 +36,7 @@ terraform {
 
 provider "aws" {
   region     = "eu-west-2" 
-  profile = "default" #uses aws credentials from home directory, explain benefit.
+  profile = "default"
   
 }
 
@@ -132,7 +132,7 @@ resource "aws_default_vpc" "default_vpc" {
   }
   tags = {
     name = "VPC_CreatedBy_Team1"
-    environment = "gurmel_playing_beach_vollyball"
+    environment = "gurmel_moonlighting_as_hungarian_translator"
 
     }
   
