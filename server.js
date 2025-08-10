@@ -1,9 +1,13 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 5000;
 
 app.get('/', (req, res) => {
-  res.status(200).send('This is our Practical Week solution. Brought to you by Group One!');
+  res.status(200).send('This is my Practical Week solution!');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 });
 
 app.listen(port, () => {
