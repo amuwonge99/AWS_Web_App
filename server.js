@@ -3,7 +3,7 @@ const app = express();
 const port = 3000;
 
 app.get('/', (req, res) => {
-  res.send('This is our Practical Week solution. Brought to you by Group One!');
+  res.status(200).send('This is our Practical Week solution. Brought to you by Group One!');
 });
 
 app.listen(port, () => {

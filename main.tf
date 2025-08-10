@@ -30,12 +30,6 @@ terraform {
     key    = "terraform.tfstate"
     region = "eu-west-2"
     profile= "default"
-
-     tags = {
-    name = "ECR_CreatedBy_Team1"
-    environment = "Gurmel_Stranded_At_Airport"
-
-    }
   }
  
 }
@@ -167,8 +161,8 @@ resource "aws_alb" "application_load_balancer" {
 
 resource "aws_security_group" "load_balancer_security_group" {
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -198,6 +192,7 @@ create_before_destroy = true
 }
 
 health_check {
+path="/health"
 port = 80
 healthy_threshold = 6
 unhealthy_threshold = 2
