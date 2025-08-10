@@ -7,5 +7,5 @@ variable "log_group_name" {
 variable "retention_days" {
   description = "The number of days to retain the logs in the CloudWatch log group"
   type        = number
-  default     = 8
+  default     = 7
 }

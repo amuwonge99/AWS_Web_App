@@ -265,6 +265,14 @@ resource "aws_ecs_service" "app_service" {
     assign_public_ip = true    
     security_groups  = ["${aws_security_group.ecs_service_security_group.id}"]
   }
+
+  deployment_controller {
+  type = "ECS"
+}
+
+deployment_minimum_healthy_percent = 100
+deployment_maximum_percent         = 200
+
    lifecycle {
     create_before_destroy = true
   }
@@ -277,8 +285,25 @@ min_capacity = 1 #minimum amount of tasks that will run
 resource_id = "service/${aws_ecs_cluster.my_cluster.name}/${aws_ecs_service.app_service.name}"
 scalable_dimension = "ecs:service:DesiredCount"
 service_namespace = "ecs"
-
 }
+
+resource "aws_appautoscaling_policy" "cpu_scaling_policy" {
+  name               = "cpu-scaling-policy"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = "ecs:service:DesiredCount"
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 60.0
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    scale_in_cooldown  = 100
+    scale_out_cooldown = 100
+  }
+}
+
 
 resource "aws_security_group" "ecs_service_security_group" {
   ingress {
@@ -367,5 +392,9 @@ resource "aws_s3_bucket" "team_one_s3" {
     environment = "gurmel_at_karoke"
   }
 }
+
+
+
+
 
 
