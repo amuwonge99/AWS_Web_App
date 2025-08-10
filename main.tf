@@ -24,12 +24,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "4.45.0"
     }
+    
   }
-   backend "s3" {
-    bucket = "gus-is-the-best"
-    key    = "terraform.tfstate"
-    region = "eu-west-2"
-    profile= "default"
+  backend "s3" {
+    bucket         = "gus-is-the-best"
+    key            = "terraform.tfstate"
+    region         = "eu-west-2"
   }
  
 }
@@ -167,6 +167,14 @@ resource "aws_security_group" "load_balancer_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+  from_port   = 80
+  to_port     = 80
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -182,7 +190,7 @@ resource "aws_security_group" "load_balancer_security_group" {
 
 resource "aws_lb_target_group" "target_group" {
 name = "target-group"
-port = 80
+port = 5000
 protocol = "HTTP"
 target_type = "ip"
 vpc_id = "${aws_default_vpc.default_vpc.id}"
@@ -193,7 +201,7 @@ create_before_destroy = true
 
 health_check {
 path="/health"
-port = 80
+port = 5000
 healthy_threshold = 6
 unhealthy_threshold = 2
 timeout = 2
