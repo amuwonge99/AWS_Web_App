@@ -26,11 +26,6 @@ terraform {
     }
     
   }
-  backend "s3" {
-    bucket         = "gus-is-the-best"
-    key            = "terraform.tfstate"
-    region         = "eu-west-2"
-  }
  
 }
 
@@ -69,8 +64,8 @@ resource "aws_ecs_task_definition" "app_task" {
       "essential": true,
       "portMappings": [
         {
-          "containerPort": 5000,
-          "hostPort": 5000
+          "containerPort": 3000,
+          "hostPort": 3000
         }
       ],
       "memory": 512,
@@ -190,7 +185,7 @@ resource "aws_security_group" "load_balancer_security_group" {
 
 resource "aws_lb_target_group" "target_group" {
 name = "target-group"
-port = 5000
+port = 3000
 protocol = "HTTP"
 target_type = "ip"
 vpc_id = "${aws_default_vpc.default_vpc.id}"
@@ -201,8 +196,8 @@ create_before_destroy = true
 
 health_check {
 path="/health"
-port = 5000
-healthy_threshold = 6
+port = 3000
+healthy_threshold = 3
 unhealthy_threshold = 2
 timeout = 2
 interval = 5
@@ -260,7 +255,7 @@ resource "aws_ecs_service" "app_service" {
   load_balancer {
     target_group_arn = "${aws_lb_target_group.target_group.arn}"
     container_name   = "app-first-task"
-    container_port   = 5000
+    container_port   = 3000
   }
 
   network_configuration {
@@ -364,7 +359,7 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
-  name              = var.log_group_name
+  name              = "/ecs/app-first-task"
   retention_in_days = var.retention_days
 
   lifecycle {

@@ -1,7 +1,7 @@
 variable "log_group_name" {
   description = "The name of the CloudWatch log group"
   type        = string
-  default     = "group1-log-group"
+  default = "/ecs/app-first-task"
 }
 
 variable "retention_days" {
