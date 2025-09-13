@@ -1,6 +1,6 @@
 #Task
 
-#Built a Docker container (Covered by Liam).
+#Built a Docker container.
 #Deployed to AWS using IAC. Line 49
 #Monitoring (line 315), logging (line 338)
 #zero downtime updates
@@ -14,43 +14,24 @@
 #Stretch, STRETCH goal
 #S3 bucket
 
-#Other things
-#tags
-
-
 terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "4.45.0"
     }
-    
   }
- 
 }
-
 provider "aws" {
   region     = "eu-west-2" 
   profile = "default"
-  
 }
 
 resource "aws_ecr_repository" "app_ecr_repo" {
   name = "app-repo"
-
-    tags = {
-    name = "ECR_CreatedBy_Team1"
-    environment = "Gurmel_bellydancing_in_duty-free"
-    }
 }
-
 resource "aws_ecs_cluster" "my_cluster" {
   name = "app-cluster"
-  
-    tags = {
-    name = "ECS_CreatedBy_Team1"
-    }
-
 }
 
 resource "aws_ecs_task_definition" "app_task" {
@@ -88,19 +69,10 @@ resource "aws_ecs_task_definition" "app_task" {
   cpu                      = 256
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 
-  tags = {
-    name = "ECS_TaskDefinition_CreatedBy_Team1"
-  }
 }
 resource "aws_iam_role" "ecsTaskExecutionRole" {
   name               = "ecsTaskExecutionRole"
   assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
-
-     tags = {
-    name = "IAM_Role_CreatedBy_Team1"
-
-    }
-
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -119,18 +91,11 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-
 resource "aws_default_vpc" "default_vpc" {
 
     lifecycle {
     create_before_destroy = true
   }
-  tags = {
-    name = "VPC_CreatedBy_Team1"
-    environment = "gurmel_moonlighting_as_hungarian_translator"
-
-    }
-  
 }
 
 # Provide references to your default subnets
@@ -141,8 +106,6 @@ resource "aws_default_subnet" "default_subnet_a" {
 resource "aws_default_subnet" "default_subnet_b" {
   availability_zone = "eu-west-2b"
 }
-
-
 resource "aws_alb" "application_load_balancer" {
   name               = "load-balancer-dev"
   load_balancer_type = "application"
@@ -156,14 +119,14 @@ resource "aws_alb" "application_load_balancer" {
 
 resource "aws_security_group" "load_balancer_security_group" {
   ingress {
-    from_port   = 443
+    from_port   = 443 #HTTPS
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-  from_port   = 80
+  from_port   = 80 #HTTP
   to_port     = 80
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
@@ -180,7 +143,6 @@ resource "aws_security_group" "load_balancer_security_group" {
   lifecycle {
     create_before_destroy = true
   }
-
 }
 
 resource "aws_lb_target_group" "target_group" {
@@ -213,7 +175,6 @@ resource "aws_lb_listener" "listener" {
     type             = "forward"
     target_group_arn = "${aws_lb_target_group.target_group.arn}"
   }
-
 }
 
 resource "aws_lb_listener" "https" {
@@ -234,15 +195,9 @@ target_group_arn = aws_lb_target_group.target_group.arn
 resource "aws_acm_certificate" "my-certificate" { 
 private_key = file("key.pem")
 certificate_body = file("cert.pem")
-tags = {
-Name = "group-1 TLS certificate"
-
-}
-
 lifecycle {
     create_before_destroy = true
   }
-  
 }
 
 resource "aws_ecs_service" "app_service" {
@@ -274,7 +229,6 @@ deployment_maximum_percent         = 200
    lifecycle {
     create_before_destroy = true
   }
-  
   }
 
 resource "aws_appautoscaling_target" "ecs_target" {
@@ -323,11 +277,6 @@ resource "aws_security_group" "ecs_service_security_group" {
     lifecycle {
     create_before_destroy = true
   }
-    tags = {
-    name = "ECS_Security_Group_CreatedBy_Team1"
-    environment ="gurmel_horseback_riding"
-
-    }
 }
 
 #Load balancer app URL
@@ -335,8 +284,8 @@ output "app_url" {
   value = aws_alb.application_load_balancer.dns_name
 }
 
-resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
-  alarm_name                = "group1-alarm"
+resource "aws_cloudwatch_metric_alarm" "gus-monitoring" {
+  alarm_name                = "gus-alarm"
   comparison_operator       = "GreaterThanOrEqualToThreshold"
   evaluation_periods        = 2
   metric_name               = "CPUUtilization"
@@ -350,12 +299,6 @@ resource "aws_cloudwatch_metric_alarm" "group1-monitoring" {
     lifecycle {
     create_before_destroy = true
   }
-  tags = {
-    name = "Alarm_CreatedBy_Team1"
-    environment ="gurmel_canoeing_without_lifejacket"
-
-    }
-  
 }
 
 resource "aws_cloudwatch_log_group" "log_group" {
@@ -365,30 +308,18 @@ resource "aws_cloudwatch_log_group" "log_group" {
   lifecycle {
     create_before_destroy = true
   }
-    tags = {
-    name = "Log_Group_CreatedBy_Team1"
-    environment ="gurmel_annoying_locals"
-
-    }
 }
 
 resource "aws_cloudwatch_log_stream" "log_stream" {
-  name           = "group1-log-stream"
+  name           = "gus-log-stream"
   log_group_name = aws_cloudwatch_log_group.log_group.name
 
     lifecycle {
     create_before_destroy = true
   }
-  
 }
-
-resource "aws_s3_bucket" "team_one_s3" {
+resource "aws_s3_bucket" "gus_s3" {
   bucket = "gus-is-the-best"
- 
-  tags = {
-    Name       = "Bucket_CreatedBy_Team1"
-    environment = "gurmel_at_karoke"
-  }
 }
 
 
