@@ -1,19 +1,3 @@
-#Task
-
-#Built a Docker container.
-#Deployed to AWS using IAC. Line 49
-#Monitoring (line 315), logging (line 338)
-#zero downtime updates
-#version controlled. git, github, gitignore file
-
-#Stretch goals
-#Add TLS using ACM and HTTPS on the ALB (line 221)
-#Add a health check endpoint and configure ALB to use it (line 200)
-#Introduce auto-scaling on CPU usage (line 274)
-
-#Stretch, STRETCH goal
-#S3 bucket
-
 terraform {
   required_providers {
     aws = {
@@ -98,7 +82,6 @@ resource "aws_default_vpc" "default_vpc" {
   }
 }
 
-# Provide references to your default subnets
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = "eu-west-2a"
 }
@@ -116,14 +99,7 @@ resource "aws_alb" "application_load_balancer" {
   security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
 }
 
-
 resource "aws_security_group" "load_balancer_security_group" {
-  ingress {
-    from_port   = 443 #HTTPS
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   ingress {
   from_port   = 80 #HTTP
@@ -177,28 +153,6 @@ resource "aws_lb_listener" "listener" {
   }
 }
 
-resource "aws_lb_listener" "https" {
-load_balancer_arn = "${aws_alb.application_load_balancer.arn}"
-port = 443
-protocol = "HTTPS"
-certificate_arn = aws_acm_certificate.my-certificate.arn
-
-default_action {
-type = "forward"
-target_group_arn = aws_lb_target_group.target_group.arn
-}
-}
-
-#openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
-#-subj "/CN=local.example.com"
-
-resource "aws_acm_certificate" "my-certificate" { 
-private_key = file("key.pem")
-certificate_body = file("cert.pem")
-lifecycle {
-    create_before_destroy = true
-  }
-}
 
 resource "aws_ecs_service" "app_service" {
   name            = "app-first-service" 
