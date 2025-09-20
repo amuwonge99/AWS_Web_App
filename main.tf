@@ -205,7 +205,7 @@ resource "aws_cloudwatch_log_group" "log_group" {
   retention_in_days = var.retention_days
 }
 
-# --- Output ELB DNS ---
+# --- Output ALB DNS ---
 output "app_url" {
   value = aws_alb.application_load_balancer.dns_name
 }
